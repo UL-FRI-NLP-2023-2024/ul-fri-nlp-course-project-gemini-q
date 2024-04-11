@@ -70,7 +70,7 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
                 value="//div[@class='qa__item qa__item--answer']",
             )
         except:
-            print("Article not found for headline [" + headline["title"] + "]")
+            print("\nArticle not found for headline [" + headline["title"] + "]\n")
             return {"title": headline["title"], "question": "", "answer": ""}
 
         question = driver.find_element(
@@ -95,7 +95,7 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
 
     delete_popup(driver)
     max_pages = get_max_number_of_pages(driver)
-    max_pages = 3
+    max_pages = 1  # For testing purposes
 
     headlines = []
     for page in tqdm(range(max_pages), desc="Getting headlines from each page"):
@@ -121,7 +121,7 @@ def parse_end_to_end(driver: webdriver.Chrome, url: str):
     df = pd.DataFrame(main_forms)
     current_directory = os.path.dirname(os.path.abspath(__file__))
     csv_file_path = os.path.join(current_directory, "vizita-si-scraper.csv")
-    df.to_csv(csv_file_path, index=False, encoding="utf-8")
+    df.to_csv(csv_file_path, index=False, encoding="utf-8", sep=";")
 
 
 if __name__ == "__main__":
