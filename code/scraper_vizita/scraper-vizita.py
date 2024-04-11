@@ -99,7 +99,7 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
 
     headlines = []
     for page in tqdm(range(max_pages), desc="Getting headlines from each page"):
-        driver.get(f"{url}?page={page + 1}")
+        driver.get(f"{url}?stran={page + 1}")
         time.sleep(2)
 
         delete_popup(driver)
