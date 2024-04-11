@@ -76,103 +76,127 @@ def get_subforum_subforum(
     url="https://med.over.net/forum/kategorija/dusevno-zdravje-in-odnosi/druzina-3574102/",
 ):
     def get_tables(driver: webdriver.Firefox):
-        data = []
-        tables = driver.find_elements(
-            by="xpath", value="//div[@class='table__outer table__outer--margin']"
-        )
-
-        for table in tables:
-            table_elements = table.find_elements(
-                by="xpath", value="//tr[@class='table-forum__row']"
+        try:
+            data = []
+            tables = driver.find_elements(
+                by="xpath", value="//div[@class='table__outer table__outer--margin']"
             )
 
-            buttons = table.find_elements(
-                by="xpath", value="//a[@class='button button--link']"
-            )
+            for table in tables:
+                table_elements = table.find_elements(
+                    by="xpath", value=".//tr[@class='table-forum__row']"
+                )
 
-            for button in buttons:
-                data.append(button.get_attribute("href"))
+                buttons = table.find_elements(
+                    by="xpath", value=".//a[@class='button button--link']"
+                )
+
+                for button in buttons:
+                    data.append(button.get_attribute("href"))
             return data
+        except Exception as e:
+            print(f"Error in get_tables: {e}")
+            return []
 
-    driver.get(url)
-    time.sleep(1)
+    try:
+        driver.get(url)
+        time.sleep(1)
 
-    data = get_tables(driver)
+        data = get_tables(driver)
 
-    return data
-
+        return data
+    except Exception as e:
+        print(f"Error occurred in get_subforum_subforum: {e}")
+        return []
 
 def get_forums_from_url(
     driver: webdriver.Firefox,
     url="https://med.over.net/forum/kategorija/zdravje/bolezni-srca-in-ozilja/kardiologija-31/",
 ):
-    driver.get(url)
-    time.sleep(1)
-
-    res_dict = []
-
-    def parse_numbers(string):
-        numbers = re.findall(r"\d+", string)
-        # Convert the strings to integers
-        numbers = [int(num) for num in numbers]
-        return numbers
-
-    def get_number_of_pages(driver: webdriver.Firefox):
-        # class="bbp-pagination-links"
-        pages = driver.find_element(
-            by="xpath", value="//div[@class='bbp-pagination-links']"
-        )
-
-        numbers = parse_numbers(pages.text)
-
-        return numbers[-1]
-
-    num_pgs = get_number_of_pages(driver)
-
-    for page in range(1, num_pgs):
-        driver.get(f"{url}page/{page}/")
+    try:
+        driver.get(url)
         time.sleep(1)
 
-        forums_on_site = driver.find_elements(
-            by="xpath",
-            value="//td[contains(@class, 'table-forum__td--title')]//a[contains(@class, 'js-checkVisited')]",
-        )
+        res_dict = []
 
-        for forum in forums_on_site:
-            res_dict.append({"text": forum.text, "link": forum.get_attribute("href")})
+        def parse_numbers(string):
+            numbers = re.findall(r"\d+", string)
+            numbers = [int(num) for num in numbers]
+            return numbers
 
-    return res_dict
+        def get_number_of_pages(driver: webdriver.Firefox):
+            try:
+                pages = driver.find_element(
+                    by="xpath", value="//div[@class='bbp-pagination-links']"
+                )
+                numbers = parse_numbers(pages.text)
+                return numbers[-1]
+            except Exception as e:
+                print(f"Error in get_number_of_pages: {e}")
+                return 0
+
+        num_pgs = get_number_of_pages(driver)
+        if num_pgs == 0:
+            return []
+
+        for page in range(1, num_pgs + 1):
+            driver.get(f"{url}page/{page}/")
+            time.sleep(1)
+
+            try:
+                forums_on_site = driver.find_elements(
+                    by="xpath",
+                    value="//td[contains(@class, 'table-forum__td--title')]//a[contains(@class, 'js-checkVisited')]",
+                )
+                for forum in forums_on_site:
+                    res_dict.append(
+                        {"text": forum.text, "link": forum.get_attribute("href")}
+                    )
+            except Exception as e:
+                print(f"Error parsing forums on site: {e}")
+                continue
+
+        return res_dict
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return []  # Return empty list if any error occurs
 
 
 def get_forum_data(
     driver: webdriver.Firefox,
     url="https://med.over.net/forum/tema/terapija-za-pritisk-22533676/",
 ):
-    driver.get(url)
-    time.sleep(1)
+    try:
+        driver.get(url)
+        time.sleep(1)  # It's better to use explicit waits instead of time.sleep
 
-    forum_data = []
+        forum_data = []
 
-    inner_page = driver.find_element(
-        by="xpath", value="//article[@class='page__inner']"
-    )
-
-    users = inner_page.find_elements(
-        by="xpath", value="//span[@class='title title--xsmall title--author']"
-    )
-    dates = inner_page.find_elements(
-        by="xpath", value="//span[@class='text text--small u-light']"
-    )
-    contents = inner_page.find_elements(
-        by="xpath", value="//div[@class='forum-post__content']"
-    )
-
-    for user, date, content in zip(users, dates, contents):
-        forum_data.append(
-            {"user": user.text, "date": date.text, "content": content.text}
+        inner_page = driver.find_element(
+            by="xpath", value="//article[@class='page__inner']"
         )
 
-    return forum_data
+        users = inner_page.find_elements(
+            by="xpath", value="//span[@class='title title--xsmall title--author']"
+        )
+
+        dates = inner_page.find_elements(
+            by="xpath", value="//span[@class='text text--small u-light']"
+        )
+
+        contents = inner_page.find_elements(
+            by="xpath", value="//div[@class='forum-post__content']"
+        )
+
+        for user, date, content in zip(users, dates, contents):
+            forum_data.append(
+                {"user": user.text, "date": date.text, "content": content.text}
+            )
+
+        return forum_data
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return []  # Return empty data if any error occurs
 
 
 def parse_end_to_end(driver: webdriver.Firefox, url: str):
