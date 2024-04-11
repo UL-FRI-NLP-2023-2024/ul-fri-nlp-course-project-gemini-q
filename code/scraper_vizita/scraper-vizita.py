@@ -95,7 +95,7 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
 
     delete_popup(driver)
     max_pages = get_max_number_of_pages(driver)
-    max_pages = 1  # For testing purposes
+    # max_pages = 1  # For testing purposes
 
     headlines = []
     for page in tqdm(range(max_pages), desc="Getting headlines from each page"):
@@ -117,11 +117,15 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
 
 def parse_end_to_end(driver: webdriver.Chrome, url: str):
     main_forms = get_main_forums(driver, url)
-
     df = pd.DataFrame(main_forms)
+
     current_directory = os.path.dirname(os.path.abspath(__file__))
+
     csv_file_path = os.path.join(current_directory, "vizita-si-scraper.csv")
     df.to_csv(csv_file_path, index=False, encoding="utf-8", sep=";")
+
+    json_file_path = os.path.join(current_directory, "vizita-si-scraper.json")
+    df.to_json(json_file_path, orient="records", force_ascii=False)
 
 
 if __name__ == "__main__":
