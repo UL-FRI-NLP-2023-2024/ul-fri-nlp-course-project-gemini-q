@@ -54,9 +54,9 @@ def get_main_forums(driver: webdriver.Firefox, url: str):
         return sf
 
     driver.get(url)
-    time.sleep(2)
+    time.sleep(1)
     accept_cookies(driver)
-    time.sleep(2)
+    time.sleep(1)
     headlines = [
         {
             "url": "https://med.over.net/forum/kategorija/zdravje-3574397/",
@@ -95,7 +95,7 @@ def get_subforum_subforum(
             return data
 
     driver.get(url)
-    time.sleep(2)
+    time.sleep(1)
 
     data = get_tables(driver)
 
@@ -107,7 +107,7 @@ def get_forums_from_url(
     url="https://med.over.net/forum/kategorija/zdravje/bolezni-srca-in-ozilja/kardiologija-31/",
 ):
     driver.get(url)
-    time.sleep(2)
+    time.sleep(1)
 
     res_dict = []
 
@@ -131,7 +131,7 @@ def get_forums_from_url(
 
     for page in range(1, num_pgs):
         driver.get(f"{url}page/{page}/")
-        time.sleep(2)
+        time.sleep(1)
 
         forums_on_site = driver.find_elements(
             by="xpath",
@@ -149,7 +149,7 @@ def get_forum_data(
     url="https://med.over.net/forum/tema/terapija-za-pritisk-22533676/",
 ):
     driver.get(url)
-    time.sleep(2)
+    time.sleep(1)
 
     forum_data = []
 
