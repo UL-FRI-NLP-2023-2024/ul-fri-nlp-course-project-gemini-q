@@ -61,30 +61,24 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
 
         delete_popup(driver)
         try:
-            driver.find_element(
+            question = driver.find_element(
                 by="xpath",
-                value="//div[@class='qa__item qa__item--question']",
+                value="//div[@class='qa__item qa__item--question']//div[@class='qa__content']",
             )
-            driver.find_element(
+            answer = driver.find_element(
                 by="xpath",
-                value="//div[@class='qa__item qa__item--answer']",
+                value="//div[@class='qa__item qa__item--answer']//div[@class='qa__content']",
             )
         except:
-            print("\nArticle not found for headline [" + headline["title"] + "]\n")
             return {"title": headline["title"], "question": "", "answer": ""}
 
-        question = driver.find_element(
-            by="xpath",
-            value="//onl-article-embed/div/div/div/div[1]/div",
-        ).text
+        return {
+            "title": headline["title"],
+            "question": question.text,
+            "answer": answer.text,
+        }
 
-        answer = driver.find_element(
-            by="xpath",
-            value="//onl-article-embed/div/div/div/div[2]/div",
-        ).text
-
-        return {"title": headline["title"], "question": question, "answer": answer}
-
+    # Start of the function
     delete_popup(driver)
     driver.get(url)
     time.sleep(2)
@@ -95,23 +89,35 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
 
     delete_popup(driver)
     max_pages = get_max_number_of_pages(driver)
-    # max_pages = 1  # For testing purposes
+    # max_pages = 10
 
-    headlines = []
-    for page in tqdm(range(max_pages), desc="Getting headlines from each page"):
+    bad_articles = 0
+    res = []
+
+    progress_bar = tqdm(
+        total=max_pages,
+        desc="Getting articles from pages",
+        postfix=f"[BAD ARTICLES: {bad_articles}]",
+    )
+
+    for page in range(max_pages):
         driver.get(f"{url}?stran={page + 1}")
         time.sleep(2)
 
         delete_popup(driver)
-        headlines_call = get_headlines_on_page(driver)
-        headlines.extend(headlines_call)
+        headlines = get_headlines_on_page(driver)
 
-    res = []
-    for headline in tqdm(headlines, desc="Getting data from each headline"):
-        data_call = get_data_from_headline(driver, headline)
-        if data_call["question"] != "" and data_call["answer"] != "":
+        for headline in headlines:
+            data_call = get_data_from_headline(driver, headline)
+            if data_call["question"] == "" and data_call["answer"] == "":
+                bad_articles += 1
+
             res.append(data_call)
 
+        progress_bar.set_postfix_str(f"[BAD ARTICLES: {bad_articles}]")
+        progress_bar.update(1)
+
+    progress_bar.close()
     return res
 
 
