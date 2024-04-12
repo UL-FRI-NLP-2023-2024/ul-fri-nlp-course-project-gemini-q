@@ -57,7 +57,7 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
 
     def get_data_from_headline(driver: webdriver.Chrome, headline: dict) -> list[dict]:
         driver.get(headline["url"])
-        time.sleep(2)
+        time.sleep(1)
 
         delete_popup(driver)
         try:
@@ -81,11 +81,11 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
     # Start of the function
     delete_popup(driver)
     driver.get(url)
-    time.sleep(2)
+    time.sleep(1)
 
     delete_popup(driver)
     accept_cookies(driver)
-    time.sleep(2)
+    time.sleep(1)
 
     delete_popup(driver)
     max_pages = get_max_number_of_pages(driver)
@@ -102,9 +102,9 @@ def get_main_forums(driver: webdriver.Chrome, url: str):
 
     for page in range(max_pages):
         driver.get(f"{url}?stran={page + 1}")
-        time.sleep(2)
+        time.sleep(1)
 
-        delete_popup(driver)
+        # delete_popup(driver)
         headlines = get_headlines_on_page(driver)
 
         for headline in headlines:
