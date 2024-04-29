@@ -16,37 +16,50 @@ from selenium.common.exceptions import (
     WebDriverException,
 )
 
+# from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+
 
 MAIN_URL = "https://med.over.net/forum"
 
 
 def setup_firefox_headless() -> webdriver.Firefox:
     firefox_options = webdriver.FirefoxOptions()
-    firefox_options.add_argument("--headless")
+    # firefox_options.add_argument("--headless")
     firefox_options.add_argument("start-maximized")
     firefox_options.add_argument("disable-infobars")
     firefox_options.add_argument("--disable-extensions")
-    firefox_options.add_argument('--no-sandbox')
-    firefox_options.add_argument('--disable-application-cache')
-    firefox_options.add_argument('--disable-gpu')
+    firefox_options.add_argument("--no-sandbox")
+    firefox_options.add_argument("--disable-application-cache")
+    firefox_options.add_argument("--disable-gpu")
     firefox_options.add_argument("--disable-dev-shm-usage")
     driver = webdriver.Firefox(options=firefox_options)
 
     return driver
 
+
 def setup_chrome_headless() -> webdriver.Chrome:
     # Set up Chrome options
-    chrome_options = webdriver.ChromeOptions() 
-    chrome_options.add_argument("--headless")  # Ensures the browser runs in headless mode
-    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model (important for some Linux environments)
-    chrome_options.add_argument("--disable-dev-shm-usage")  # Overcome limited resource problems
-    chrome_options.add_argument("start-maximized")  # Maximizes Chrome window size
-    chrome_options.add_argument("disable-infobars")  # Disables the "Chrome is being controlled" infobar
+    chrome_options = Options()
+    # chrome_options.add_argument("--headless")  # Ensures the browser runs in headless mode
+    chrome_options.add_argument("--no-sandbox")  # Bypass OS security model
+    chrome_options.add_argument(
+        "--disable-dev-shm-usage"
+    )  # Overcome limited resource problems
+    chrome_options.add_argument("--start-maximized")  # Maximizes Chrome window size
+    chrome_options.add_argument(
+        "--disable-infobars"
+    )  # Disables the "Chrome is being controlled" infobar
     chrome_options.add_argument("--disable-extensions")  # Disables existing extensions
-    chrome_options.add_argument("--disable-gpu")  # Applicable to windows os only
+    chrome_options.add_argument("--disable-gpu")  # Applicable to Windows OS only
     chrome_options.add_argument("--disable-software-rasterizer")
 
-    driver = webdriver.Chrome(options=chrome_options)
+    # Specify the path to chromedriver using Service
+    service = Service(executable_path="/usr/lib/chromium-browser/chromedriver")
+
+    # Initialize the Chrome driver
+    driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
 
@@ -87,9 +100,9 @@ def get_main_forums(driver: webdriver.Firefox, url: str):
         return sf
 
     driver.get(url)
-    #time.sleep(0.1)
+    # time.sleep(0.1)
     accept_cookies(driver)
-    #time.sleep(0.1)
+    # time.sleep(0.1)
     headlines = [
         {
             "url": "https://med.over.net/forum/kategorija/zdravje-3574397/",
@@ -133,7 +146,7 @@ def get_subforum_subforum(
 
     try:
         driver.get(url)
-        #time.sleep(0.1)
+        # time.sleep(0.1)
 
         data = get_tables(driver)
 
@@ -149,7 +162,7 @@ def get_forums_from_url(
 ):
     try:
         driver.get(url)
-        #time.sleep(0.1)
+        # time.sleep(0.1)
 
         res_dict = []
 
@@ -173,10 +186,10 @@ def get_forums_from_url(
         if num_pgs == 0:
             return []
 
-        #for page in range(1, num_pgs + 1):
+        # for page in range(1, num_pgs + 1):
         for page in range(1, 2):
             driver.get(f"{url}page/{page}/")
-            #time.sleep(0.1)
+            # time.sleep(0.1)
 
             try:
                 forums_on_site = driver.find_elements(
@@ -222,10 +235,20 @@ def get_forum_data(
             By.XPATH, "//div[@class='forum-post__content']"
         )
 
+        post_views = inner_page.find_element(
+            By.XPATH, "//span[@class='post-views-count']"
+        )
+
         forum_data = []
         for user, date, content in zip(users, dates, contents):
             forum_data.append(
-                {"user": user.text, "date": date.text, "content": content.text}
+                {
+                    "user": user.text,
+                    "date": date.text,
+                    "content": content.text,
+                    "views": post_views.text,
+                    "user_html": user.get_attribute("outerHTML"),
+                }
             )
 
         return forum_data
@@ -249,18 +272,12 @@ def parse_end_to_end(driver: webdriver.Firefox, url: str):
 
         for subform in sub_forums:
             forums = get_forums_from_url(driver, subform)
+            res_data = []
 
-            for forum_idx_ in tqdm(range(len(forums))): 
+            for forum_idx_ in tqdm(range(len(forums))):
                 forum = forums[forum_idx_]
-            
-                if os.path.exists(
-                    f"data/{subform}/{forum['link'].replace('/', '-')}.json"
-                ):
-                    print("Skipping", forum["link"])
-                    continue
 
                 forum_data = get_forum_data(driver, forum["link"])
-                res_data = []
 
                 res_data.append(
                     {
@@ -273,17 +290,15 @@ def parse_end_to_end(driver: webdriver.Firefox, url: str):
                         "forum_data": forum_data,
                     }
                 )
-                sf_no_slashes = subform.replace("/", "-")
-                link_no_slashes = forum["link"].replace("/", "-")
-                os.makedirs(f"data/{sf_no_slashes}/", exist_ok=True)
-
-                with open(f"data/{sf_no_slashes}/{link_no_slashes}.json", "w") as f:
-                    json.dump(res_data, f, indent=4)
+            sf_no_slashes = subform.replace("/", "-")
+            os.makedirs(f"data/{sf_no_slashes}/", exist_ok=True)
+            with open(f"data/{sf_no_slashes}/data.json", "w") as f:
+                json.dump(res_data, f, indent=4)
 
 
 def main():
     global MAIN_URL
-    driver = setup_firefox_headless() 
+    driver = setup_firefox_headless()
     parse_end_to_end(driver, MAIN_URL)
     driver.close()
 
