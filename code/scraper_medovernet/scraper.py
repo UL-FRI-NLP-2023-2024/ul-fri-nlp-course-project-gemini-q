@@ -5,6 +5,16 @@ import requests
 import pandas as pd
 import re
 import json
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import (
+    TimeoutException,
+    NoSuchElementException,
+    WebDriverException,
+)
+
 
 MAIN_URL = "https://med.over.net/forum"
 
@@ -109,6 +119,7 @@ def get_subforum_subforum(
         print(f"Error occurred in get_subforum_subforum: {e}")
         return []
 
+
 def get_forums_from_url(
     driver: webdriver.Firefox,
     url="https://med.over.net/forum/kategorija/zdravje/bolezni-srca-in-ozilja/kardiologija-31/",
@@ -163,40 +174,47 @@ def get_forums_from_url(
 
 
 def get_forum_data(
-    driver: webdriver.Firefox,
-    url="https://med.over.net/forum/tema/terapija-za-pritisk-22533676/",
+    driver, url="https://med.over.net/forum/tema/terapija-za-pritisk-22533676/"
 ):
     try:
         driver.get(url)
-        time.sleep(1)  # It's better to use explicit waits instead of time.sleep
+        # Set up an explicit wait to handle loading times more gracefully
+        wait = WebDriverWait(driver, 10)
 
-        forum_data = []
-
-        inner_page = driver.find_element(
-            by="xpath", value="//article[@class='page__inner']"
+        # Wait for the inner page to load properly before proceeding
+        inner_page = wait.until(
+            EC.presence_of_element_located(
+                (By.XPATH, "//article[@class='page__inner']")
+            )
         )
 
         users = inner_page.find_elements(
-            by="xpath", value="//span[@class='title title--xsmall title--author']"
+            By.XPATH, "//span[@class='title title--xsmall title--author']"
         )
-
         dates = inner_page.find_elements(
-            by="xpath", value="//span[@class='text text--small u-light']"
+            By.XPATH, "//span[@class='text text--small u-light']"
         )
-
         contents = inner_page.find_elements(
-            by="xpath", value="//div[@class='forum-post__content']"
+            By.XPATH, "//div[@class='forum-post__content']"
         )
 
+        forum_data = []
         for user, date, content in zip(users, dates, contents):
             forum_data.append(
                 {"user": user.text, "date": date.text, "content": content.text}
             )
 
         return forum_data
+    except TimeoutException:
+        print("Error: The page load timed out.")
+    except NoSuchElementException:
+        print("Error: Some elements were not found on the page.")
+    except WebDriverException as e:
+        print(f"WebDriver Error: {e}")
     except Exception as e:
-        print(f"Error occurred: {e}")
-        return []  # Return empty data if any error occurs
+        print(f"Unhandled exception occurred: {e}")
+
+    return []  # Return empty data if any error occurs
 
 
 def parse_end_to_end(driver: webdriver.Firefox, url: str):
@@ -207,12 +225,17 @@ def parse_end_to_end(driver: webdriver.Firefox, url: str):
 
         for subform in sub_forums:
             forums = get_forums_from_url(driver, subform)
-            res_data = []
 
             print("number of forums: ", len(forums), "In", subform)
 
             for forum in forums:
+                if os.path.exists(
+                    f"data/{subform}/{forum['link'].replace('/', '-')}.json"
+                ):
+                    print("Skipping", forum["link"])
+                    continue
                 forum_data = get_forum_data(driver, forum["link"])
+                res_data = []
 
                 res_data.append(
                     {
@@ -225,12 +248,12 @@ def parse_end_to_end(driver: webdriver.Firefox, url: str):
                         "forum_data": forum_data,
                     }
                 )
+                sf_no_slashes = subform.replace("/", "-")
+                link_no_slashes = forum["link"].replace("/", "-")
+                os.makedirs(f"data/{sf_no_slashes}/", exist_ok=True)
 
-            sf_no_slashes = subform.replace("/", "-")
-            os.makedirs(f"data/{sf_no_slashes}", exist_ok=True)
-
-            with open(f"data/{sf_no_slashes}/data.json", "w") as f:
-                json.dump(res_data, f, indent=4)
+                with open(f"data/{sf_no_slashes}/{link_no_slashes}.json", "w") as f:
+                    json.dump(res_data, f, indent=4)
 
 
 def main():
