@@ -11,13 +11,23 @@
       let
         pkgs = import nixpkgs {
           inherit system;
-          overlays = [
-            (self: super: {})
-          ];
+
+        config = {
+            allowUnfree = true;
+          };
         };
-        pythonEnv = pkgs.python3.withPackages
-          (ps: with ps; [ matplotlib numpy seaborn pyyaml selenium requests]);
+        pythonEnv = pkgs.python3.withPackages (ps: with ps; [
+          matplotlib
+          numpy
+          seaborn
+          pyyaml
+          selenium
+          requests
+          tqdm
+        ]);
       in {
-        devShells.default = pkgs.mkShell { buildInputs = [ pythonEnv ]; };
+        devShells.default = pkgs.mkShell {
+          buildInputs = [ pythonEnv pkgs.chromedriver pkgs.google-chrome]; 
+        };
       });
 }
