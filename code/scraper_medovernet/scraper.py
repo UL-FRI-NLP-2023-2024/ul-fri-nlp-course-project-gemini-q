@@ -271,6 +271,10 @@ def parse_end_to_end(driver: webdriver.Firefox, url: str):
         sub_forums = get_subforum_subforum(driver, main_form["link"])
 
         for subform in sub_forums:
+            sf_no_slashes = subform.replace("/", "-")
+            if os.path.exists(f"data/{sf_no_slashes}/data.json"):
+                continue
+
             forums = get_forums_from_url(driver, subform)
             res_data = []
 
@@ -290,7 +294,6 @@ def parse_end_to_end(driver: webdriver.Firefox, url: str):
                         "forum_data": forum_data,
                     }
                 )
-            sf_no_slashes = subform.replace("/", "-")
             os.makedirs(f"data/{sf_no_slashes}/", exist_ok=True)
             with open(f"data/{sf_no_slashes}/data.json", "w") as f:
                 json.dump(res_data, f, indent=4)
