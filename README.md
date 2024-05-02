@@ -36,10 +36,10 @@ Project selection & simple corpus analysis:
 
 Initial implementation / baseline with results:
 
-- [ ] Updated Submission 1 parts
-- [ ] Implemented at least one solution with analysis
-- [ ] Future directions and ideas
-- [ ] Well organized repository
+- [x] Updated Submission 1 parts
+- [x] Implemented at least one solution with analysis
+- [x] Future directions and ideas
+- [x] Well organized repository
 
 ### Submission 3
 
