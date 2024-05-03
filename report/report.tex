@@ -56,7 +56,7 @@
 \Abstract{
 This project explores the utilization of Large Language Models (LLMs) for conversational agent development in the Slovene language. We investigate various state-of-the-art LLMs suitable for fine-tuning, considering factors such as compatibility with Slovene, computational infrastructure requirements, and model capabilities. Emphasis is placed on understanding the creation process of LLMs and the construction of high-quality conversational datasets.
 Our methodology involves reviewing datasets and categorizing instructions for training Instruce-based LLMs. We devise a comprehensive plan for data gathering, identifying sources such as med-over.net and slo-tech forums. Crawlers are developed to efficiently collect conversational data, which is organized systematically to facilitate fine-tuning of LLMs.
-Additionally, we examine pertinent literature, including research on models like BLOOM and LLaMa 2, to ascertain key considerations in data preparation. By synthesizing these insights, we prepare a corpus of conversational data tailored for fine-tuning LLMs, ensuring its relevance and quality.
+Additionally, we examine pertinent literature, including research on models like MixTal and LLaMa 2, to ascertain key considerations in data preparation. By synthesizing these insights, we prepare a corpus of conversational data tailored for fine-tuning LLMs, ensuring its relevance and quality.
 Furthermore, we discuss the potential adaptation of an existing LLM using the gathered data, offering insights into the practical application of our methodology. Our findings are consolidated in a final report, providing a comprehensive overview of the process and its implications for developing conversational agents in Slovene using LLMs.
 }
 
@@ -91,16 +91,33 @@ Prilagajanje modelov, kot sta LLaMA2 in MixTal, za specifične jezikovne in kult
 
 Za nadaljnje izboljšave in prilagoditve naših modelov, bo naša raziskovalna akcija temeljila na zbirki orodij in virov, dostopnih v repozitoriju Brevdev Notebooks \cite{brevdev}. Ta bogat vir vsebuje obsežno zbirko zvezkov Jupyter, ki ponujajo raznolike metode, tehnike in primere kode, ki so ključni za razumevanje naših modelov.
 
-\subsection*{Ocenjevanje kakovosti forum objave}
+%\subsection*{Ocenjevanje kakovosti forum objave}
 
-Na podlagi analize značilnosti, ki jih uporabniki spletnih zdravstvenih forumov upoštevajo pri ocenjevanju verodostojnosti informacij, smo razvili strategijo za filtriranje odgovorov iz forumskih strani, prilagojeno po \cite{fan2013online, sauls2018perceived, zummo2015}. Ta strategija vključuje:
+%Na podlagi analize značilnosti, ki jih uporabniki spletnih zdravstvenih forumov upoštevajo pri ocenjevanju verodostojnosti informacij, smo razvili strategijo za filtriranje odgovorov iz %forumskih strani, prilagojeno po \cite{fan2013online, sauls2018perceived, zummo2015}. Ta strategija vključuje:
+%\begin{enumerate}
+%    \item \textbf{Kakovost argumenta} -- prednost bodo imeli odgovori, ki so logično utemeljeni in smiselni;
+%    \item \textbf{Preverjanje} -- informacije bodo preverjene z zunanjimi ali notranjimi viri za dodatno potrditev verodostojnosti;
+%    \item \textbf{Pismenost prispevka} -- ocenjevali bomo prvi vtis ka\-ko\-vo\-sti sporočila na podlagi pismenosti prispevka, pri čemer bomo upoštevali vpliv fizične in duševne iz\-čr\-pa\-no\-sti na sposobnost artikulacije;
+%    \item  \textbf{Verodostojnost referenc} -- prednost bodo imeli odgovori, ki vključujejo verodostojne zunanje reference; 
+%    \item \textbf{Konsenz množice} -- upoštevali bomo splošno mnenje skupnosti in podporo več viri za oceno verodostojnosti. Ta pristop omogoča izločanje manj verodostojnih informacij in %izpostavlja tiste, ki ustrezajo našim kriterijem kakovosti, verodostojnosti in objektivnosti.
+%\end{enumerate}
+
+
+\subsection*{Priprava učne množice}
+
+V procesu prilagajanja pogovrnih modelov smo izvedli temeljito filtriranje podatkov, pridobljenih s forumov MedOverNet, Viva in Vizita. Filtriranje je bilo izvedeno v več korakih, da bi zagotovili kakovost in relevantnost podatkov za nadaljnje treniranje naših modelov.
+
 \begin{enumerate}
-    \item \textbf{Kakovost argumenta} -- prednost bodo imeli odgovori, ki so logično utemeljeni in smiselni;
-    \item \textbf{Preverjanje} -- informacije bodo preverjene z zunanjimi ali notranjimi viri za dodatno potrditev verodostojnosti;
-    \item \textbf{Pismenost prispevka} -- ocenjevali bomo prvi vtis ka\-ko\-vo\-sti sporočila na podlagi pismenosti prispevka, pri čemer bomo upoštevali vpliv fizične in duševne iz\-čr\-pa\-no\-sti na sposobnost artikulacije;
-    \item  \textbf{Verodostojnost referenc} -- prednost bodo imeli odgovori, ki vključujejo verodostojne zunanje reference; 
-    \item \textbf{Konsenz množice} -- upoštevali bomo splošno mnenje skupnosti in podporo več viri za oceno verodostojnosti. Ta pristop omogoča izločanje manj verodostojnih informacij in izpostavlja tiste, ki ustrezajo našim kriterijem kakovosti, verodostojnosti in objektivnosti.
+    \item \textbf{Preverjanje obstoja vprašanj in odgovorov:} Najprej smo preverili, ali podatki vključujejo tako vprašanja kot odgovore.
+    \item \textbf{Čiščenje neželenih znakov:} Odstranili smo neželene znake iz vprašanj in odgovorov, da bi izboljšali kakovost teksta za procesiranje.
+    \item \textbf{Preverjanje obiska strani:} Izločili smo vsebine, ki niso prejele vsaj enega ogleda, saj to kaže na nizko interakcijo ali pomembnost vsebine.
+    \item \textbf{Dolžina vsebine:} Zagotovili smo, da vprašanja vsebujejo več kot 19 znakov, odgovori pa več kot 50 znakov, kar prispeva k večji informativnosti dialogov.
+    \item \textbf{Preverjanje anonimnosti odgovora:} Izključili smo odgovore anonimnih uporabnikov, saj dajemo prednost verodostojnejšim in zanesljivejšim informacijam od identificiranih strokovnjakov ali uporabnikov.
+    \item \textbf{Gramatična pravilnost:} Opravili smo preverjanje gramatičnih napak v vprašanjih in odgovorih, da bi zagotovili jezikovno pravilnost. Besedilo brez gramatičnih napak kaže na avtorjevo sposobnost obvladovanja jezika, kar lahko prispeva k vecji verodostojnosti odgovora. 
+    \item \textbf{Preverjanje prisotnosti neprimernih besed:} Uporabili smo funkcijo za prepoznavanje neprimernih izrazov v vprašanjih in odgovorih, prevedenih v angleščino, da bi zagotovili primernost vsebine za uporabo.
 \end{enumerate}
+
+Ta natančna metodologija filtriranja nam omogoča, da ohranjamo visoko kakovost podatkovnega nabora, ki se bo uporabljala za treniranje in prilagajanje našega pogvornega modela za slovenski jezik.
 
 
 %------------------------------------------------
