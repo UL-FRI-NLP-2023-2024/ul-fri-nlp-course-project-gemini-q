@@ -10,25 +10,26 @@ from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 import transformers
 from datetime import datetime
 
+# Environment variables
 os.environ["TOKEN"] = "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"
 os.environ["HF_HOME"] = "/hf-cache"
 
 
+# Dataset setup
 def setup_datasets(train_path="train.jsonl", test_path="test.jsonl"):
-    """Load training and evaluation datasets."""
     train_dataset = load_dataset("json", data_files=train_path, split="train")
     eval_dataset = load_dataset("json", data_files=test_path, split="train")
     return train_dataset, eval_dataset
 
 
+# Formatting function for dataset
 def formatting_func(example):
-    """Format the example into a prompt."""
     text = f"### Question: {example['input']}\n ### Answer: {example['output']}"
     return text
 
 
+# Model setup
 def setup_model():
-    """Load the base model with quantization settings."""
     model_id = "mistralai/Mixtral-8x7B-v0.1"
     download_directory = "/hf-cache"
 
@@ -53,25 +54,28 @@ def setup_model():
     return model
 
 
+# Tokenizer setup
 def setup_tokenizer():
-    """Load the tokenizer for the model."""
     model_id = "mistralai/Mixtral-8x7B-v0.1"
     download_directory = "/hf-cache"
 
     tokenizer = AutoTokenizer.from_pretrained(
         model_id,
         token=os.environ["TOKEN"],
+        device_map="auto",
         cache_dir=download_directory,
         padding_side="left",
         add_eos_token=True,
         add_bos_token=True,
     )
 
+    tokenizer.pad_token = tokenizer.eos_token  # Set the pad_token to eos_token
+
     return tokenizer
 
 
+# Print trainable parameters
 def print_trainable_parameters(model):
-    """Print the number of trainable parameters in the model."""
     trainable_params = 0
     all_param = 0
     for _, param in model.named_parameters():
@@ -83,8 +87,8 @@ def print_trainable_parameters(model):
     )
 
 
+# Setup LoRA model
 def get_lora_model(model):
-    """Apply LoRA configuration to the model."""
     config = LoraConfig(
         r=32,
         lora_alpha=64,
@@ -109,8 +113,8 @@ def get_lora_model(model):
     return model
 
 
+# Training function
 def train():
-    """Main training function."""
     model_id = "mistralai/Mixtral-8x7B-v0.1"
     model = setup_model()
     tokenizer = setup_tokenizer()
@@ -164,9 +168,9 @@ def train():
             logging_steps=25,  # When to start reporting loss
             logging_dir="./logs",  # Directory for storing logs
             save_strategy="steps",  # Save the model checkpoint every logging step
-            save_steps=25,  # Save checkpoints every 50 steps
-            evaluation_strategy="steps",  # Evaluate the model every logging step
-            eval_steps=25,  # Evaluate and save checkpoints every 50 steps
+            save_steps=25,  # Save checkpoints every 25 steps
+            eval_strategy="steps",  # Evaluate the model every logging step
+            eval_steps=25,  # Evaluate and save checkpoints every 25 steps
             do_eval=True,  # Perform evaluation at the end of training
             run_name=f"{run_name}-{datetime.now().strftime('%Y-%m-%d-%H-%M')}",  # Name of the W&B run (optional)
         ),
