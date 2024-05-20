@@ -1,27 +1,39 @@
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    TrainingArguments,
+from torch.distributed.fsdp.fully_sharded_data_parallel import (
+    FullOptimStateDictConfig,
+    FullStateDictConfig,
 )
-from trl import SFTTrainer
+from datasets import load_dataset
 import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import os
-from qa_medical_dataloader import QADataloader, QADataset
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
+import transformers
+from datetime import datetime
 
 os.environ["TOKEN"] = "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"
 os.environ["HF_HOME"] = "/hf-cache"
-os.environ["CUDA_LAUNCH_BLOCKING"] = "1"
+
+
+def setup_datasets(train_path="train.jsonl", test_path="test.jsonl"):
+    """Load training and evaluation datasets."""
+    train_dataset = load_dataset("json", data_files=train_path, split="train")
+    eval_dataset = load_dataset("json", data_files=test_path, split="train")
+    return train_dataset, eval_dataset
+
+
+def formatting_func(example):
+    """Format the example into a prompt."""
+    text = f"### Question: {example['input']}\n ### Answer: {example['output']}"
+    return text
 
 
 def setup_model():
+    """Load the base model with quantization settings."""
     model_id = "mistralai/Mixtral-8x7B-v0.1"
     download_directory = "/hf-cache"
 
-    n4_config = BitsAndBytesConfig(
+    bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
         bnb_4bit_use_double_quant=True,
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
@@ -29,8 +41,8 @@ def setup_model():
     model = AutoModelForCausalLM.from_pretrained(
         model_id,
         trust_remote_code=True,
-        token=os.environ["TOKEN"],  # Updated to use 'token' instead of 'use_auth_token'
-        quantization_config=n4_config,
+        token=os.environ["TOKEN"],
+        quantization_config=bnb_config,
         device_map="auto",
         cache_dir=download_directory,
     )
@@ -41,103 +53,133 @@ def setup_model():
     return model
 
 
-def setup_peft():
-    peft_config = LoraConfig(
-        lora_alpha=16,
-        lora_dropout=0.1,
-        r=64,
-        bias="none",
+def setup_tokenizer():
+    """Load the tokenizer for the model."""
+    model_id = "mistralai/Mixtral-8x7B-v0.1"
+    download_directory = "/hf-cache"
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_id,
+        token=os.environ["TOKEN"],
+        cache_dir=download_directory,
+        padding_side="left",
+        add_eos_token=True,
+        add_bos_token=True,
+    )
+
+    return tokenizer
+
+
+def print_trainable_parameters(model):
+    """Print the number of trainable parameters in the model."""
+    trainable_params = 0
+    all_param = 0
+    for _, param in model.named_parameters():
+        all_param += param.numel()
+        if param.requires_grad:
+            trainable_params += param.numel()
+    print(
+        f"trainable params: {trainable_params} || all params: {all_param} || trainable%: {100 * trainable_params / all_param}"
+    )
+
+
+def get_lora_model(model):
+    """Apply LoRA configuration to the model."""
+    config = LoraConfig(
+        r=32,
+        lora_alpha=64,
         target_modules=[
             "q_proj",
             "k_proj",
             "v_proj",
             "o_proj",
-            "gate_proj",
-            "up_proj",
-            "down_proj",
+            "w1",
+            "w2",
+            "w3",
             "lm_head",
         ],
+        bias="none",
+        lora_dropout=0.05,  # Conventional
         task_type="CAUSAL_LM",
     )
 
-    return peft_config
+    model = get_peft_model(model, config)
+    print_trainable_parameters(model)
+
+    return model
 
 
-def generate_response(prompt, model, tokenizer):
-    encoded_input = tokenizer(prompt, return_tensors="pt", add_special_tokens=True)
-    model_inputs = encoded_input.to("cuda")
+def train():
+    """Main training function."""
+    model_id = "mistralai/Mixtral-8x7B-v0.1"
+    model = setup_model()
+    tokenizer = setup_tokenizer()
 
-    generated_ids = model.generate(
-        **model_inputs,
-        max_new_tokens=512,
-        do_sample=True,
-        pad_token_id=tokenizer.eos_token_id,
-    )
+    def generate_and_tokenize_prompt(prompt):
+        max_length = 1024
+        result = tokenizer(
+            formatting_func(prompt),
+            truncation=True,
+            max_length=max_length,
+            padding="max_length",
+        )
+        result["labels"] = result["input_ids"].copy()
+        return result
 
-    decoded_output = tokenizer.batch_decode(generated_ids)
+    train_dataset, eval_dataset = setup_datasets()
+    tokenized_train_dataset = train_dataset.map(generate_and_tokenize_prompt)
+    tokenized_val_dataset = eval_dataset.map(generate_and_tokenize_prompt)
 
-    return decoded_output[0].replace(prompt, "")
+    model.gradient_checkpointing_enable()
+    model = prepare_model_for_kbit_training(model)
+    model = get_lora_model(model)
 
+    tokenizer.pad_token = tokenizer.eos_token
 
-def collate_fn(batch, tokenizer):
-    print(f"Raw batch: {batch}")  # Print raw batch
-    texts = [item["input_text"] for item in batch]
-    encodings = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
-    print(f"Encoded batch: {encodings}")  # Print encoded batch
-    return encodings
-
-
-def train(model, peft_config):
     if torch.cuda.device_count() > 1:  # If more than 1 GPU
-        print(torch.cuda.device_count())
+        print(f"Using {torch.cuda.device_count()} GPUs")
         model.is_parallelizable = True
         model.model_parallel = True
 
-    args = TrainingArguments(
-        output_dir="/models/Mixtral_Med",  # Specify the output directory
-        max_steps=1000,  # comment out this line if you want to train in epochs
-        per_device_train_batch_size=32,
-        warmup_steps=0.03,
-        logging_steps=10,
-        save_strategy="epoch",
-        evaluation_strategy="steps",
-        eval_steps=10,  # comment out this line if you want to evaluate at the end of each epoch
-        learning_rate=2.5e-5,
-        bf16=True,
-    )
+    project = "medical-finetune"
+    base_model_name = "mixtral8x7b"
+    run_name = base_model_name + "-" + project
+    output_dir = "/models/" + run_name
+    os.makedirs(output_dir, exist_ok=True)
 
-    max_seq_length = 1024
-
-    # Load dataset
-    dataset_path = "combine.json"
-    qa_dataloader = QADataloader(dataset_path)
-    train_dataloader, test_dataloader = qa_dataloader.get_dataloaders()
-
-    tokenizer = qa_dataloader.get_tokenizer()
-
-    # Check the first batch to ensure data is correct
-    for batch in train_dataloader:
-        print(f"First train batch: {batch}")
-        break
-
-    trainer = SFTTrainer(
+    trainer = transformers.Trainer(
         model=model,
-        peft_config=peft_config,
-        max_seq_length=max_seq_length,
-        tokenizer=tokenizer,
-        packing=True,
-        args=args,
-        train_dataset=train_dataloader.dataset,
-        eval_dataset=test_dataloader.dataset if test_dataloader else None,
+        train_dataset=tokenized_train_dataset,
+        eval_dataset=tokenized_val_dataset,
+        args=transformers.TrainingArguments(
+            output_dir=output_dir,
+            warmup_steps=1,
+            per_device_train_batch_size=2,
+            gradient_accumulation_steps=1,
+            gradient_checkpointing=True,
+            max_steps=300,
+            learning_rate=2.5e-5,  # Want a small lr for finetuning
+            fp16=True,
+            optim="paged_adamw_8bit",
+            logging_steps=25,  # When to start reporting loss
+            logging_dir="./logs",  # Directory for storing logs
+            save_strategy="steps",  # Save the model checkpoint every logging step
+            save_steps=25,  # Save checkpoints every 50 steps
+            evaluation_strategy="steps",  # Evaluate the model every logging step
+            eval_steps=25,  # Evaluate and save checkpoints every 50 steps
+            do_eval=True,  # Perform evaluation at the end of training
+            run_name=f"{run_name}-{datetime.now().strftime('%Y-%m-%d-%H-%M')}",  # Name of the W&B run (optional)
+        ),
+        data_collator=transformers.DataCollatorForLanguageModeling(
+            tokenizer, mlm=False
+        ),
     )
 
+    model.config.use_cache = (
+        False  # silence the warnings. Please re-enable for inference!
+    )
     trainer.train()
-    trainer.save_model(
-        "/models/Mixtral_Med"
-    )  # Save the model to the specified directory
 
 
 if __name__ == "__main__":
-    model = setup_model()
-    peft_config = setup_peft()
-    train(model, peft_config)
+    train()
