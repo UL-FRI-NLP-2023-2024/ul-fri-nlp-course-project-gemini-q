@@ -113,6 +113,11 @@ def train(model, peft_config, tokenizer):
 
     max_seq_length = 1024
 
+    # Load dataset
+    dataset_path = 'path_to_your_dataset.json' 
+    qa_dataloader = QADataloader(dataset_path, tokenizer_name='mistralai/Mixtral-8x7B-v0.1')
+    train_dataloader = qa_dataloader.get_dataloader()
+
     trainer = SFTTrainer(
         model=model,
         peft_config=peft_config,
@@ -120,8 +125,8 @@ def train(model, peft_config, tokenizer):
         tokenizer=tokenizer,
         packing=True,
         args=args,
-        # train_dataset=instruct_tune_dataset["train"],
-        # eval_dataset=instruct_tune_dataset["test"]
+        train_dataset=train_dataloader.dataset,  # Use the dataset from the dataloader
+        # eval_dataset=eval_dataset  # Add evaluation dataset if available
     )
 
     trainer.train()
@@ -129,4 +134,7 @@ def train(model, peft_config, tokenizer):
 
 
 if __name__ == "__main__":
-    pass
+    model = setup_model()
+    tokenizer = setup_tokenizer()
+    peft_config = setup_peft()
+    train(model, peft_config, tokenizer)

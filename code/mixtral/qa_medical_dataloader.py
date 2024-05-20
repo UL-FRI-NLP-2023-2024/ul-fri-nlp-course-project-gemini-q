@@ -2,6 +2,7 @@ from torch.utils.data import Dataset, DataLoader
 from transformers import AutoTokenizer
 from datasets import load_dataset
 
+
 class QADataset(Dataset):
     def __init__(self, data, tokenizer, max_length=512):
         self.data = data
@@ -13,12 +14,11 @@ class QADataset(Dataset):
 
     def __getitem__(self, idx):
         item = self.data[idx]
-        question = item['question']
-        context = item['answer']
+        preprompt = "Prosim odgovori na sledeče vprašasnje.\n"
+        formatted_input = f"<s>[INST]{preprompt}{item['question']}[/INST]{item['answer']}</s>"
         inputs = self.tokenizer.encode_plus(
-            question,
-            context,
-            add_special_tokens=True,
+            formatted_input,
+            add_special_tokens=False,
             max_length=self.max_length,
             padding='max_length',
             truncation=True,
