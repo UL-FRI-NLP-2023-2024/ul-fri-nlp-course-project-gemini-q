@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
 #SBATCH --mem-per-cpu=8gb
-#SBATCH --time=2:0:0
+#SBATCH --time=0:30:0
 #SBATCH --partition=gpu
 #SBATCH --gpus=1
 #SBATCH --nodelist=gwn[01-07]
@@ -14,6 +14,7 @@ singularity exec \
     --nv \
     --bind ./:/src/ \
     --bind /d/hpc/projects/FRI/spagnolog/hf-cache/:/hf-cache \
+    --bind /d/hpc/projects/FRI/spagnolog/models:/models \
     ./singularity/nvidia_container.sif \
     python3 \
     /src/ft.py
