@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=mistralai/Mixtral-8x7B-v0.1_nlp
+#SBATCH --job-name=mistralai/Mixtral-8x7B-v0.1_medical_SLO_finetune_nlp_la_baugette
 #SBATCH --output=output_mixtral_moe.txt
 #SBATCH --error=error_mixtral_moe.txt
 #SBATCH --ntasks=1
@@ -17,4 +17,3 @@ singularity exec \
     ./singularity/nvidia_container.sif \
     python3 \
     /src/ft.py
-

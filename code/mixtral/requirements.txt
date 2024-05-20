@@ -5,4 +5,3 @@ torch
 bitsandbytes
 peft
 datasets
-flash-attn --no-build-isolation

@@ -13,7 +13,6 @@ from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 os.environ["TOKEN"] = "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"
 os.environ["HF_HOME"] = "/hf-cache"
 
-
 def setup_model():
     model_id = "mistralai/Mixtral-8x7B-v0.1"
     download_directory = "/hf-cache"
@@ -40,17 +39,6 @@ def setup_model():
 
     return model
 
-
-def setup_tokenizer():
-    model_id = "mistralai/Mixtral-8x7B-v0.1"
-    tokenizer = AutoTokenizer.from_pretrained(
-        model_id, use_auth_token=os.environ["TOKEN"]
-    )
-    tokenizer.pad_token = tokenizer.eos_token
-    tokenizer.padding_side = "right"
-    return tokenizer
-
-
 def setup_peft():
     peft_config = LoraConfig(
         lora_alpha=16,
@@ -72,8 +60,7 @@ def setup_peft():
 
     return peft_config
 
-
-def generate_response(prompt, model):
+def generate_response(prompt, model, tokenizer):
     encoded_input = tokenizer(prompt, return_tensors="pt", add_special_tokens=True)
     model_inputs = encoded_input.to("cuda")
 
@@ -88,6 +75,10 @@ def generate_response(prompt, model):
 
     return decoded_output[0].replace(prompt, "")
 
+def collate_fn(batch, tokenizer):
+    texts = [item['input_text'] for item in batch]
+    encodings = tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
+    return encodings
 
 def train(model, peft_config, tokenizer):
     if torch.cuda.device_count() > 1:  # If more than 1 GPU
@@ -113,10 +104,10 @@ def train(model, peft_config, tokenizer):
 
     max_seq_length = 1024
 
-    # Load dataset
-    dataset_path = 'path_to_your_dataset.json' 
-    qa_dataloader = QADataloader(dataset_path, tokenizer_name='mistralai/Mixtral-8x7B-v0.1')
-    train_dataloader = qa_dataloader.get_dataloader()
+    qa_dataloader = QADataloader(
+        "combine.json",
+    )
+    train_dataloader, test_dataloader = qa_dataloader.get_dataloaders()
 
     trainer = SFTTrainer(
         model=model,
@@ -126,15 +117,15 @@ def train(model, peft_config, tokenizer):
         packing=True,
         args=args,
         train_dataset=train_dataloader.dataset,  # Use the dataset from the dataloader
-        # eval_dataset=eval_dataset  # Add evaluation dataset if available
+        eval_dataset=test_dataloader.dataset if test_dataloader else None,  # Add evaluation dataset if available
+        data_collator=lambda batch: collate_fn(batch, tokenizer)
     )
 
     trainer.train()
     trainer.save_model("Mixtral_Med")
 
-
 if __name__ == "__main__":
     model = setup_model()
-    tokenizer = setup_tokenizer()
+    tokenizer = AutoTokenizer.from_pretrained("mistralai/Mixtral-8x7B-v0.1", use_auth_token=os.environ["TOKEN"])
     peft_config = setup_peft()
     train(model, peft_config, tokenizer)
