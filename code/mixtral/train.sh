@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
 #SBATCH --mem-per-cpu=8gb
-#SBATCH --time=0:30:0
+#SBATCH --time=72:00:0
 #SBATCH --partition=gpu
 #SBATCH --gpus=1
 #SBATCH --nodelist=gwn[01-07]

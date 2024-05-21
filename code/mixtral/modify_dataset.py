@@ -1,6 +1,7 @@
 import json
+import random
 
-TEST_TRAIN_SPLIT = 0.9
+TEST_TRAIN_SPLIT = 0.90
 
 
 def preprocess_data(data):
@@ -17,6 +18,8 @@ if __name__ == "__main__":
     with open("combine.json", "r", encoding="utf-8") as f:
         data = json.load(f)
     data = preprocess_data(data)
+
+    random.shuffle(data)  # Shuffle the data randomly
 
     length = len(data)
     split = int(length * TEST_TRAIN_SPLIT)

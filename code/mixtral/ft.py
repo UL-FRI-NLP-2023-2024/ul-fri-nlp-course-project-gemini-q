@@ -24,7 +24,7 @@ def setup_datasets(train_path="train.jsonl", test_path="test.jsonl"):
 
 # Formatting function for dataset
 def formatting_func(example):
-    text = f"### Question: {example['input']}\n ### Answer: {example['output']}"
+    text = f"### Vloga: Zdravstveni svetovalec. Vprašanje: {example['input']} Odgovor: {example['output']}"
     return text
 
 
