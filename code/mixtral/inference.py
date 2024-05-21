@@ -8,20 +8,21 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import os
 import json
 from datetime import datetime
+from peft import PeftModel, PeftConfig
 
 # Environment variables
 os.environ["TOKEN"] = "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"
 os.environ["HF_HOME"] = "/hf-cache"
 
 
-# Formatting function for dataset
-def formatting_func(example):
-    text = f"### Vloga: Zdravstveni svetovalec. Vprašanje: {example['input']} Odgovor: {example['output']}"
+# Formatting function for dataset (inference)
+def formatting_func_inference(example):
+    text = f"### Vloga: Zdravstveni svetovalec. Vprašanje: {example['input']} Odgovor:"
     return text
 
 
 # Model setup
-def setup_model(checkpoint_path=None):
+def setup_model(checkpoint_path=None, adapter_path=None):
     model_id = "mistralai/Mixtral-8x7B-v0.1"
     download_directory = "/hf-cache"
 
@@ -31,24 +32,18 @@ def setup_model(checkpoint_path=None):
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
 
-    if checkpoint_path:
-        model = AutoModelForCausalLM.from_pretrained(
-            checkpoint_path,
-            trust_remote_code=True,
-            token=os.environ["TOKEN"],
-            quantization_config=bnb_config,
-            device_map="auto",
-            cache_dir=download_directory,
-        )
-    else:
-        model = AutoModelForCausalLM.from_pretrained(
-            model_id,
-            trust_remote_code=True,
-            token=os.environ["TOKEN"],
-            quantization_config=bnb_config,
-            device_map="auto",
-            cache_dir=download_directory,
-        )
+    model = AutoModelForCausalLM.from_pretrained(
+        model_id,
+        trust_remote_code=True,
+        token=os.environ["TOKEN"],
+        quantization_config=bnb_config,
+        device_map="auto",
+        cache_dir=download_directory,
+    )
+
+    if adapter_path:
+        config = PeftConfig.from_pretrained(adapter_path)
+        model = PeftModel.from_pretrained(model, adapter_path, config=config)
 
     device = next(model.parameters()).device
     print(f"Model loaded on device: {device}")
@@ -79,7 +74,7 @@ def setup_tokenizer():
 # Load and format test data
 def load_and_format_test_data(test_path="test.jsonl"):
     test_dataset = load_dataset("json", data_files=test_path, split="train")
-    formatted_data = [formatting_func(example) for example in test_dataset]
+    formatted_data = [formatting_func_inference(example) for example in test_dataset]
     return formatted_data
 
 
@@ -92,7 +87,7 @@ def generate_predictions(model, tokenizer, formatted_data, max_length=1024):
             inputs = tokenizer(
                 text, return_tensors="pt", truncation=True, max_length=max_length
             ).to(model.device)
-            outputs = model.generate(**inputs)
+            outputs = model.generate(**inputs, max_length=max_length)
             prediction = tokenizer.decode(outputs[0], skip_special_tokens=True)
             predictions.append(prediction)
     return predictions
@@ -115,8 +110,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--checkpoint_path",
         type=str,
-        required=True,
+        required=False,
         help="Path to the model checkpoint.",
+    )
+    parser.add_argument(
+        "--adapter_path",
+        type=str,
+        required=True,
+        help="Path to the adapter model weights.",
     )
     parser.add_argument(
         "--test_path",
@@ -133,7 +134,9 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    model = setup_model(args.checkpoint_path)
+    model = setup_model(
+        checkpoint_path=args.checkpoint_path, adapter_path=args.adapter_path
+    )
     tokenizer = setup_tokenizer()
     formatted_data = load_and_format_test_data(args.test_path)
     predictions = generate_predictions(model, tokenizer, formatted_data)
