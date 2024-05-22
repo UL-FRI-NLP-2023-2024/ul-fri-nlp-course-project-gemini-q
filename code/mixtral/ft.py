@@ -9,6 +9,7 @@ import os
 from peft import prepare_model_for_kbit_training, LoraConfig, get_peft_model
 import transformers
 from datetime import datetime
+import json
 
 # Environment variables
 os.environ["TOKEN"] = "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"
@@ -184,6 +185,31 @@ def train():
     )
     trainer.train()
 
+    return model, tokenizer
+
+
+# Prediction function
+def predict(model, tokenizer, test_dataset_path="test.jsonl", output_dir="predictions"):
+    test_dataset = load_dataset("json", data_files=test_dataset_path, split="train")
+
+    def generate_prompt(example):
+        return f"### Vloga: Zdravstveni svetovalec. Vprašanje: {example['input']}"
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    for idx, example in enumerate(test_dataset):
+        prompt = generate_prompt(example)
+        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        with torch.no_grad():
+            outputs = model.generate(**inputs, max_length=1024, num_beams=5, early_stopping=True)
+        prediction = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        prediction_dict = {"input": example["input"], "prediction": prediction}
+
+        with open(os.path.join(output_dir, f"prediction_{idx}.json"), "w") as f:
+            json.dump(prediction_dict, f)
+
 
 if __name__ == "__main__":
-    train()
+    trained_model, trained_tokenizer = train()
+    predict(trained_model, trained_tokenizer)
+
