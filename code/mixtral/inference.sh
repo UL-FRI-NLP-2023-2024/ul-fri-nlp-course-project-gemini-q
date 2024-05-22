@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=6
 #SBATCH --mem-per-cpu=8gb
-#SBATCH --time=2:00:0
+#SBATCH --time=12:00:0
 #SBATCH --partition=gpu
 #SBATCH --gpus=1
 #SBATCH --nodelist=gwn[01-07]
@@ -18,4 +18,4 @@ singularity exec \
     ./singularity/nvidia_container.sif \
     python3 \
     /src/inference.py \
-    --adapter_path="/models/mixtral8x7b-medical-finetune/checkpoint-300/adapter_model.safetensors" 
+    --adapter_path="/models/mixtral8x7b-medical-finetune/checkpoint-300"

@@ -61,7 +61,7 @@ def setup_tokenizer():
         token=os.environ["TOKEN"],
         device_map="auto",
         cache_dir=download_directory,
-        padding_side="left",
+        padding_side="left",  # Ensure left padding for correct generation
         add_eos_token=True,
         add_bos_token=True,
     )
@@ -78,29 +78,39 @@ def load_and_format_test_data(test_path="test.jsonl"):
     return formatted_data
 
 
-# Generate predictions
-def generate_predictions(model, tokenizer, formatted_data, max_length=1024):
-    predictions = []
+# Generate predictions with batching and immediate write to file
+def generate_predictions(
+    model,
+    tokenizer,
+    formatted_data,
+    output_path="predictions.jsonl",
+    max_length=1024,
+    batch_size=8,
+):
     model.eval()
     with torch.no_grad():
-        for text in formatted_data:
-            inputs = tokenizer(
-                text, return_tensors="pt", truncation=True, max_length=max_length
-            ).to(model.device)
-            outputs = model.generate(**inputs, max_length=max_length)
-            prediction = tokenizer.decode(outputs[0], skip_special_tokens=True)
-            predictions.append(prediction)
-    return predictions
+        with open(output_path, "w") as f:
+            for i in range(0, len(formatted_data), batch_size):
+                batch_texts = formatted_data[i : i + batch_size]
+                inputs = tokenizer(
+                    batch_texts,
+                    return_tensors="pt",
+                    truncation=True,
+                    max_length=max_length,
+                    padding=True,
+                ).to(model.device)
+                outputs = model.generate(**inputs, max_length=max_length)
+                batch_predictions = [
+                    tokenizer.decode(output, skip_special_tokens=True)
+                    for output in outputs
+                ]
+                for prediction in batch_predictions:
+                    json.dump({"prediction": prediction}, f)
+                    f.write("\n")
+    print(f"Predictions saved to {output_path}")
 
 
-# Save predictions to a file
-def save_predictions(predictions, output_path="predictions.jsonl"):
-    with open(output_path, "w") as f:
-        for pred in predictions:
-            json.dump({"prediction": pred}, f)
-            f.write("\n")
-
-
+# Example usage
 if __name__ == "__main__":
     import argparse
 
@@ -139,7 +149,6 @@ if __name__ == "__main__":
     )
     tokenizer = setup_tokenizer()
     formatted_data = load_and_format_test_data(args.test_path)
-    predictions = generate_predictions(model, tokenizer, formatted_data)
-    save_predictions(predictions, args.output_path)
+    generate_predictions(model, tokenizer, formatted_data, output_path=args.output_path)
 
     print(f"Predictions saved to {args.output_path}")
