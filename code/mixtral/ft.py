@@ -165,7 +165,7 @@ def train():
             max_steps=1000,
             learning_rate=2e-5,  # Adjusted learning rate for fine-tuning
             fp16=True,
-            optim="adamw",
+            optim="adamw_torch",
             logging_steps=50,  # When to start reporting loss
             logging_dir="./logs",  # Directory for storing logs
             save_strategy="steps",  # Save the model checkpoint every logging step
@@ -201,7 +201,9 @@ def predict(model, tokenizer, test_dataset_path="test.jsonl", output_dir="predic
         prompt = generate_prompt(example)
         inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
         with torch.no_grad():
-            outputs = model.generate(**inputs, max_length=1024, num_beams=5, early_stopping=True)
+            outputs = model.generate(
+                **inputs, max_length=1024, num_beams=5, early_stopping=True
+            )
         prediction = tokenizer.decode(outputs[0], skip_special_tokens=True)
         prediction_dict = {"input": example["input"], "prediction": prediction}
 
@@ -212,4 +214,3 @@ def predict(model, tokenizer, test_dataset_path="test.jsonl", output_dir="predic
 if __name__ == "__main__":
     trained_model, trained_tokenizer = train()
     predict(trained_model, trained_tokenizer)
-

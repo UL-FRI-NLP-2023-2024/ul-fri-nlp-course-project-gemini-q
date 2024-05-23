@@ -16,3 +16,8 @@ setup-singularity-container: build-docker save_docker_image build-singularity
 
 push-to-arnes:
 	rsync -avz --exclude="**/singularity"  --progress ./* arnes:/d/hpc/home/$(ARNES_USER)/nlp
+
+download-from-arnes:
+	rsync -avz --progress arnes:/d/hpc/home/$(ARNES_USER)/nlp/predictions ./predictions
+	rsync -avz --progress arnes:/d/hpc/home/$(ARNES_USER)/nlp/predictions ./predictions_vanilla
+
