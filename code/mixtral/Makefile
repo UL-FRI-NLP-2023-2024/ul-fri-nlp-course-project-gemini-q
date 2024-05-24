@@ -19,5 +19,5 @@ push-to-arnes:
 
 download-from-arnes:
 	rsync -avz --progress arnes:/d/hpc/home/$(ARNES_USER)/nlp/predictions ./predictions
-	rsync -avz --progress arnes:/d/hpc/home/$(ARNES_USER)/nlp/predictions ./predictions_vanilla
+	rsync -avz --progress arnes:/d/hpc/home/$(ARNES_USER)/nlp/predictions_vanilla ./predictions_vanilla
 
