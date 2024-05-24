@@ -1,0 +1,19 @@
+{
+"input": "Zanima me, kakšne so posledice splava?",
+"prediction": "Spoštovani! Posledice splava so odvisne od tega, kako je bil splav opravljen. Če je bil splav opravljen v prvem trimesečju nosečnosti, so posledice minimalne. Če je bil splav opravljen v drugem ali tretjem trimesečju nosečnosti, pa so posledice lahko zelo hude. Lep pozdrav!"
+}
+
+{
+"input": "Spoštovani,stara sem 81 let. Izvid krvi na kreatinin je pokazal 400 μmol/L. Ali bi me moralo to skrbeti?Hvala.",
+"prediction": "Spoštovani,vrednost kreatinina 400 μmol/L je povišana. Priporočam pregled pri nefrologu.Lep pozdrav!"
+}
+
+{
+"input": "Pozdravljeni, na UZ so mi v sredini leve ledvici (srednji ledvični čašici) odkrili ledvični kamen (2 - 3mm). Veliko sem prebrala o odstranitvi le-tega. Za tako majhne kamne se priporoča le pitje velike količine vode, hoja po stopnicah, brezov čaj, da ne naštevam.. in čakanje...Sprašujem vas, glede na to, da nimam nobenih težav/napadov in glede na to, da je radiologinja nekako izjavila, da ta bo ostal (ne vem kaj je imela v mislih) koliko ima smisel se nacejati čez vsako mer, skakati po stopnicah.... in se obremenjevati s tem? Kakšna je verjetnost, da se takšen kamen s takšno lego izloči in če so pri teh velikosti tudi takšne neznosne bolečine, kot jih nekateri navajajo. Najlepša hvala za odgovor. Lp. Ana R",
+"prediction": "Spoštovani! Če je kamen v srednji ledvični čašici, je verjetnost, da se bo izločil manjša kot če bi bil v zgornji ali spodnji ledvični čašici."
+}
+
+{
+"input": "Lepo pozdravljeni. Na levi nadlakti so se mi zaceli delati majhni izpuščaji – koža je rdečkasta in suha, vmes se naredi tudi kakšen “mozoljček”. Zdaj se mi je isto začelo delati tudi na desni nadlakti. Vmes imam tudi liso, kjer je koža bolj bela kot drugje na roki in to liso imam že skoraj 1 leto. Kadar se kopam v banji, opažam tudi, da imam ravno po nadlakteh in po hrbtu izredno rdečo kožo, kot bi me ožgalo sonce, ki pa se po nekem času umiri. Zanima me, s čim naj se mažem, da bi se to pozdravilo? Gre lahko za kakšne gljivice ali samo za suho kožo ali kaj tretjega? In kaj narediti? Najlepša hvala za vaš odgovor.",
+"prediction": "Pozdravljeni! Najverjetneje gre za atopični dermatitis (atopični izpuščaj). Priporočam, da se naročite na pregled k dermatologu, ki vam bo predpisal primerno zdravljenje. Lep pozdrav!"
+}
