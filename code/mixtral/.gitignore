@@ -2,3 +2,5 @@ singularity
 combine.json
 test.jsonl
 train.jsonl
+predictions
+predictions_vanilla
