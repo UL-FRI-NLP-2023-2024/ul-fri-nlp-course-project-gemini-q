@@ -232,7 +232,7 @@ justification=raggedright]{caption}
 \renewcommand{\@maketitle}{%
 \twocolumn[{%
 \thispagestyle{empty}%
-{\includegraphics[scale=0.2]{logo.png}}
+{\includegraphics[scale=0.2]{logo_new.jpg}}
 \vskip-74pt%
 {\raggedleft\small\sffamily\bfseries\@JournalInfo\\\@Archive\par}%
 \vskip64pt%
@@ -267,12 +267,12 @@ justification=raggedright]{caption}
 %----------------------------------------------------------------------
 %	REFERENCES
 %----------------------------------------------------------------------  
-
 % Remove brackets from numbering in List of References
 \renewcommand{\@biblabel}[1]{\bfseries\color{color1}\textsuperscript{[#1]}}
 %\setlength{\bibitemsep}{0cm}
 \let\oldbibliography\thebibliography
 \renewcommand{\thebibliography}[1]{%
-\addcontentsline{toc}{section}{\refname}%
+\addcontentsline{toc}{section}{\refname}
 \oldbibliography{#1}%
 \setlength\itemsep{0pt}}%
+
