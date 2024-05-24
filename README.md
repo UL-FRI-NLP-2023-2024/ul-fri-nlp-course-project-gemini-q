@@ -45,8 +45,8 @@ Initial implementation / baseline with results:
 
 Final solution and report:
 
-- [ ] Final report incl. analyses and discussions
-- [ ] Fully reproducible repository
+- [x] Final report incl. analyses and discussions
+- [x] Fully reproducible repository
 
 ### Peer review (PIVO)
 
