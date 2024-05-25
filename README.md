@@ -32,8 +32,8 @@ make build-singularity # To build the singularity image out of the docker image
 make push-to-arnes
 
 # On arnes:
-ssh> sbatch fine_tune.sh
-ssh> sbatch run_inference.sh
+ssh> sbatch train.sh # To fine tune mixtral model and predict on test data
+ssh> sbatch predict.sh # To predict test data on base untrained model 
 
 # Downloading from the server
 make download-from-arnes
