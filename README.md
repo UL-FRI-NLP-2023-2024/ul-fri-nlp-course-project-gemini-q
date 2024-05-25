@@ -23,6 +23,22 @@ Furthermore, we discuss the potential adaptation of an existing LLM using the ga
 - Teven Le Scao, Angela Fan, Christopher Akiki, Ellie Pavlick, Suzana Ilić, Daniel Hesslow, Roman Castagné, Alexandra Sasha Luccioni, François Yvon, Matthias Gallé, Jonathan Tow, Alexander M. Rush, ...  et al. (300+ additional authors not shown), BLOOM: A 176B-Parameter Open-Access Multilingual Language Model, https://arxiv.org/abs/2211.05100, model: https://huggingface.co/bigscience/bloom 
 
 
+### Tuning Mixtral
+
+```
+make build-docker # To build the docker image
+make save_docker_image # To export the docker image
+make build-singularity # To build the singularity image out of the docker image
+make push-to-arnes
+
+# On arnes:
+ssh> sbatch fine_tune.sh
+ssh> sbatch run_inference.sh
+
+# Downloading from the server
+make download-from-arnes
+```
+
 ## Course obligations
 ### Submission 1
 
